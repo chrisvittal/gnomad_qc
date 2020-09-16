@@ -1,6 +1,6 @@
 from gnomad.utils.annotations import annotate_adj
 from gnomad.sample_qc.relatedness import generate_trio_stats_expr
-from gnomad.utils.slack import try_slack
+# from gnomad.utils.slack import try_slack
 from gnomad.utils.sparse_mt import *
 from gnomad.utils.filtering import filter_to_autosomes
 from gnomad.utils.vep import vep_or_lookup_vep
@@ -28,6 +28,7 @@ def compute_info() -> hl.Table:
     :rtype: Table
     """
     mt = get_gnomad_v3_mt(key_by_locus_and_alleles=True, remove_hard_filtered_samples=False)
+    mt = mt._filter_partitions([219])
     mt = mt.filter_rows((hl.len(mt.alleles) > 1))
     mt = mt.transmute_entries(**mt.gvcf_info)
 
@@ -87,7 +88,7 @@ def compute_info() -> hl.Table:
         )
     )
 
-    return info_ht.naive_coalesce(5000)
+    return info_ht  # .naive_coalesce(5000)
 
 
 def split_info() -> hl.Table:
@@ -226,7 +227,7 @@ def run_vep() -> hl.Table:
 
 
 def main(args):
-    hl.init(default_reference='GRCh38', log='/qc_annotations.log')
+    hl.init(default_reference='GRCh38', log='/var/log/hail/qc_annotations.log')
 
     if args.compute_info:
         compute_info().write(get_info(split=False).path, overwrite=args.overwrite)
@@ -273,7 +274,4 @@ if __name__ == '__main__':
     parser.add_argument('--overwrite', help='Overwrite data', action='store_true')
     args = parser.parse_args()
 
-    if args.slack_channel:
-        try_slack(args.slack_channel, main, args)
-    else:
-        main(args)
+    main(args)
